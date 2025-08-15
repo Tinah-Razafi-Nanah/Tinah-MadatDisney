@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mad at DISNEY _ Cover Nanah</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(to bottom, #ffe4e1, #ffb6c1, #ffc0cb);
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 2s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        #container {
+            text-align: center;
+            z-index: 1;
+        }
+
+        #rabbit {
+            width: 300px;
+            height: auto;
+            animation: bob 1s infinite alternate ease-in-out;
+        }
+
+        @keyframes bob {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-10px) rotate(2deg); }
+        }
+
+        #lyrics {
+            margin-top: 20px;
+            font-size: 24px;
+            color: #ff69b4;
+            text-shadow: 0 0 5px #fff, 0 0 10px #ff69b4;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #lyrics.active {
+            opacity: 1;
+            animation: glow 1s infinite alternate;
+        }
+
+        @keyframes glow {
+            0% { text-shadow: 0 0 5px #fff, 0 0 10px #ff69b4; }
+            100% { text-shadow: 0 0 10px #fff, 0 0 20px #ff69b4; }
+        }
+
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        button {
+            background: #ff69b4;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+
+        input[type="range"], input[type="number"] {
+            margin: 5px;
+        }
+
+        #progress {
+            font-size: 14px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <div id="container">
+        <img id="rabbit" src="rabbit-singing.jpg" alt="Lapin chanteur">
+        <div id="lyrics"></div>
+    </div>
+    <div id="controls">
+        <button id="play">▶︎ Lecture</button>
+        <button id="pause">⏸ Pause</button>
+        <button id="restart">↻ Restart</button>
+        <div id="progress">0:00 / 0:00</div>
+        <label>Offset (ms): <input type="number" id="offset" value="0" step="100"></label>
+        <label>Volume: <input type="range" id="volume" min="0" max="1" step="0.01" value="1"></label>
+    </div>
+
+    <audio id="audio" src="song.m4a.m4a"></audio>
+
+    <script>
+        const audio = document.getElementById('audio');
+        const playBtn = document.getElementById('play');
+        const pauseBtn = document.getElementById('pause');
+        const restartBtn = document.getElementById('restart');
+        const offsetInput = document.getElementById('offset');
+        const volumeInput = document.getElementById('volume');
+        const progress = document.getElementById('progress');
+        const lyricsDiv = document.getElementById('lyrics');
+        const rabbitImg = document.getElementById('rabbit');
+
+        // Limiter la durée à 1min 20s (80 secondes)
+        audio.addEventListener('timeupdate', () => {
+            if (audio.currentTime >= 80) {
+                audio.currentTime = 0;
+                audio.pause();
+                lyricsDiv.classList.remove('active');
+                rabbitImg.style.animationPlayState = 'paused';
+            }
+        });
+
+        // Paroles avec timings (en secondes, jusqu'à 1min 20s)
+        const lyrics = [
+            { start: 0, end: 10, text: "I'm mad at Disney, Disney" },
+            { start: 10, end: 13, text: "They tricked me, tricked me" },
+            { start: 14, end: 17, text: "Had me wishing on a shooting star" },
+            { start: 17, end: 19, text: "But now I'm twenty-something" },
+            { start: 20, end: 21, text: "I still know nothing" },
+            { start: 22, end: 25, text: "About who I am or what I'm not" },
+            { start: 26, end: 28, text: "So call me a pessimist" },
+            { start: 29, end: 30, text: "But I don't believe in it" },
+            { start: 31, end: 34, text: "Finding a true love's kiss is bullshit" },
+            { start: 35, end: 36, text: "'Cause I felt sad love" },
+            { start: 37, end: 39, text: "I felt bad love" },
+            { start: 40, end: 43, text: "Sometimes happy love (Happy love)" },
+            { start: 43, end: 45, text: "Turns into giving up (Giving up)" },
+            { start: 45, end: 46, text: "I felt hurt love" },
+            { start: 47, end: 48, text: "About the word love" },
+            { start: 48, end: 53, text: "What the hell is love supposed to feel like?" },
+            { start: 54, end: 57, text: "What the hell is love? What the hell is love?" },
+            { start: 58, end: 64, text: "What the hell is love supposed to feel like?" },
+            { start: 64, end: 71, text: "No no no ... I don't wanna fall in love" },
+            { start: 71, end: 80, text: "La la la..." } // Remplissage jusqu'à 1min 20s
+        ];
+
+        function createStars() {
+            const starsContainer = document.querySelector('.stars');
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                star.style.width = `${Math.random() * 3 + 1}px`;
+                star.style.height = star.style.width;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 2}s`;
+                starsContainer.appendChild(star);
+            }
+        }
+        createStars();
+
+        playBtn.addEventListener('click', () => audio.play());
+        pauseBtn.addEventListener('click', () => audio.pause());
+        restartBtn.addEventListener('click', () => {
+            audio.currentTime = 0;
+            audio.play();
+        });
+        volumeInput.addEventListener('input', () => audio.volume = volumeInput.value);
+
+        audio.addEventListener('timeupdate', () => {
+            const current = audio.currentTime;
+            const duration = Math.min(audio.duration || 0, 80);
+            progress.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+
+            const offset = parseInt(offsetInput.value) / 1000 || 0;
+            const adjustedTime = current + offset;
+
+            const currentLyric = lyrics.find(lyric => adjustedTime >= lyric.start && adjustedTime < lyric.end);
+            if (currentLyric) {
+                lyricsDiv.textContent = currentLyric.text;
+                lyricsDiv.classList.add('active');
+            } else {
+                lyricsDiv.classList.remove('active');
+            }
+
+            if (!audio.paused) {
+                rabbitImg.style.animationPlayState = 'running';
+            } else {
+                rabbitImg.style.animationPlayState = 'paused';
+            }
+        });
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        audio.addEventListener('loadedmetadata', () => {
+            progress.textContent = `0:00 / ${formatTime(Math.min(audio.duration, 80))}`;
+        });
+    </script>
+</body>
+</html>
